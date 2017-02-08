@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.beier.pass</string>
+	<key>category</key>
+	<string>Productivity</string>
+	<key>connections</key>
+	<dict>
+		<key>5FCC9602-390D-4154-B2F9-297ADFB88BDD</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>9A93A3FA-C901-49FF-A116-6E5E5CDD1F08</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>94D92841-8C74-4372-8B45-BB66560025E7</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>94D92841-8C74-4372-8B45-BB66560025E7</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>2CFC23C2-3973-4B2C-8B19-7B6DB24B4C01</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>E7CBB481-EB27-459D-B7AC-14F5208D5310</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>5FCC9602-390D-4154-B2F9-297ADFB88BDD</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>Lucas Beier</string>
+	<key>description</key>
+	<string>A simple Alfred workflow for Pass</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>Pass</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>35</integer>
+				<key>hotmod</key>
+				<integer>393216</integer>
+				<key>hotstring</key>
+				<string>P</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedAppsMode</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>E7CBB481-EB27-459D-B7AC-14F5208D5310</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<false/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string>Clipboard will be cleared after 10 seconds.</string>
+				<key>title</key>
+				<string>Pass</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>9A93A3FA-C901-49FF-A116-6E5E5CDD1F08</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>keyword</key>
+				<string>pass</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string></string>
+				<key>script</key>
+				<string>#!/usr/bin/env python
+
+import fnmatch
+import os
+import sys
+import string
+
+
+QUERY = sys.argv[1]
+HOME = os.environ['HOME']
+PASS_DIR = os.environ.get('PASSWORD_STORE_DIR', os.path.join(HOME, '.password-store/'))
+
+
+# TODO: list_passwords creates cache of passwords for first time
+def list_passwords():
+    ret = []
+
+    for root, dirnames, filenames in os.walk(PASS_DIR):
+        for filename in fnmatch.filter(filenames, '*.gpg'):
+            ret.append(os.path.join(root, filename.replace('.gpg','')).replace(PASS_DIR, ''))
+    return sorted(ret, key=lambda s: s.lower())
+
+
+def search_passwords(query):
+    ret = []
+
+    terms = filter(lambda x: x, query.lower().split())
+    passwords = list_passwords()
+
+    for password in passwords:
+        for t in terms:
+            if t not in password.lower():
+                break
+        else:
+            ret.append(password)
+
+    return ret
+
+
+def xmlize_items(items, query):
+    items_a = []
+
+    for item in items:
+        list = string.rsplit(item, "/", 1)
+        name = list[-1]
+        path = item if len(list) == 2 else ""
+
+        complete = item
+        if item.lower().startswith(query.lower()):
+            i = item.find("/", len(query))
+            if i != -1:
+                complete = item[:(i+1)]
+
+        items_a.append("""
+    &lt;item uid="%(item)s" arg="%(item)s" autocomplete="%(complete)s"&gt;
+        &lt;title&gt;%(name)s&lt;/title&gt;
+        &lt;subtitle&gt;%(path)s&lt;/subtitle&gt;
+    &lt;/item&gt;
+        """ % {'item': item, 'name': name, 'path': path, 'complete': complete})
+
+    return """
+&lt;?xml version="1.0"?&gt;
+&lt;items&gt;
+    %s
+&lt;/items&gt;
+    """ % '\n'.join(items_a)
+
+
+items = search_passwords(QUERY)
+print xmlize_items(items, QUERY)</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>filter-entries.py</string>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string>Pass</string>
+				<key>type</key>
+				<integer>8</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>5FCC9602-390D-4154-B2F9-297ADFB88BDD</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<false/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string>Clipboard cleared.</string>
+				<key>title</key>
+				<string>Pass</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>2CFC23C2-3973-4B2C-8B19-7B6DB24B4C01</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>#!/bin/bash
+
+set -e
+
+QUERY=$1
+PATH=/usr/local/bin:$PATH
+export PASSWORD_STORE_CLIP_TIME=10
+
+# GPG agent
+envfile="$HOME/.gnupg/gpg-agent.env"
+if [[ -e "$envfile" ]] &amp;&amp; kill -0 $(grep GPG_AGENT_INFO "$envfile" | cut -d: -f 2) 2&gt;/dev/null; then
+    eval "$(cat "$envfile"); export GPG_AGENT_INFO"
+else
+    eval "$(gpg-agent --daemon --write-env-file "$envfile")"
+fi
+
+pass show -c $QUERY</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>copy-password.sh</string>
+				<key>type</key>
+				<integer>8</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>94D92841-8C74-4372-8B45-BB66560025E7</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string></string>
+	<key>uidata</key>
+	<dict>
+		<key>2CFC23C2-3973-4B2C-8B19-7B6DB24B4C01</key>
+		<dict>
+			<key>xpos</key>
+			<integer>570</integer>
+			<key>ypos</key>
+			<integer>220</integer>
+		</dict>
+		<key>5FCC9602-390D-4154-B2F9-297ADFB88BDD</key>
+		<dict>
+			<key>xpos</key>
+			<integer>230</integer>
+			<key>ypos</key>
+			<integer>90</integer>
+		</dict>
+		<key>94D92841-8C74-4372-8B45-BB66560025E7</key>
+		<dict>
+			<key>xpos</key>
+			<integer>390</integer>
+			<key>ypos</key>
+			<integer>220</integer>
+		</dict>
+		<key>9A93A3FA-C901-49FF-A116-6E5E5CDD1F08</key>
+		<dict>
+			<key>xpos</key>
+			<integer>570</integer>
+			<key>ypos</key>
+			<integer>90</integer>
+		</dict>
+		<key>E7CBB481-EB27-459D-B7AC-14F5208D5310</key>
+		<dict>
+			<key>xpos</key>
+			<integer>40</integer>
+			<key>ypos</key>
+			<integer>90</integer>
+		</dict>
+	</dict>
+	<key>webaddress</key>
+	<string></string>
+</dict>
+</plist>
